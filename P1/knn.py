@@ -23,9 +23,18 @@ def compute_distances(Xtrain, X):
 	  point.
 	"""
 	#####################################################
-	#				 YOUR CODE HERE					                    #
-	#####################################################		 
+	#				 YOUR CODE HERE					                
+
+	dists=np.zeros((len(X),len(Xtrain)))
+	for i in range(len(X)):
+		for j in range(len(Xtrain)):
+			d=np.sqrt(np.sum(np.dot((X[i] - Xtrain[j]),(X[i] - Xtrain[j]).T)))
+			dists[i][j]=d  
 	return dists
+                 
+	#####################################################		 
+
+
 
 ###### Q5.2 ######
 def predict_labels(k, ytrain, dists):
@@ -44,8 +53,16 @@ def predict_labels(k, ytrain, dists):
 	"""
 	#####################################################
 	#				 YOUR CODE HERE					                    #
-	#####################################################
+		#####################################################
+	ypred = np.zeros(len(dists))
+	for i in range(len(dists)):
+		sort_k=np.argsort(dists[i,:])[:k]
+		knn = ytrain[sort_k]
+		ypred[i] = np.argmax(np.bincount(knn))
 	return ypred
+
+	#####################################################
+
 
 ###### Q5.3 ######
 def compute_accuracy(y, ypred):
@@ -60,7 +77,8 @@ def compute_accuracy(y, ypred):
 	- acc: The accuracy of prediction (scalar).
 	"""
 	#####################################################
-	#				 YOUR CODE HERE					                    #
+	#				 YOUR CODE HERE					                    
+	acc=np.mean(y==ypred)
 	#####################################################
 	return acc
 
@@ -69,7 +87,7 @@ def find_best_k(K, ytrain, dists, yval):
 	"""
 	Find best k according to validation accuracy.
 	Inputs:
-	- K: A list of ks.
+	- K: A list of ks.，
 	- ytrain: A numpy array of shape (num_train,) where ytrain[i] is the label
 	  of the ith training point.
 	- dists: A numpy array of shape (num_test, num_train) where dists[i, j]
@@ -83,7 +101,13 @@ def find_best_k(K, ytrain, dists, yval):
 	"""
 	
 	#####################################################
-	#				 YOUR CODE HERE					                    #
+	#				 YOUR CODE HERE					                    
+	validation_accuracy=[]
+	for k in K:
+		ypred = predict_labels(k, ytrain, dists)
+		validation_accuracy.append(compute_accuracy(yval, ypred))
+
+	best_k=K[np.argmax(validation_accuracy)]
 	#####################################################
 	return best_k, validation_accuracy
 
@@ -149,4 +173,8 @@ def main():
 	f.close()
 	
 if __name__ == "__main__":
+	from time import time
+	start = time()
 	main()
+	end = time()
+	print("time: ",end-start)

@@ -11,7 +11,7 @@ import pandas as pd
 
 ###### Q4.1 ######
 def linear_regression_noreg(X, y):
-  """
+ """
   Compute the weight parameter given X and y.
   Inputs:
   - X: A numpy array of shape (num_samples, D) containing feature.
@@ -22,7 +22,11 @@ def linear_regression_noreg(X, y):
   #####################################################
   #				 YOUR CODE HERE					                    #
   #####################################################		 
-  return w
+ xtx=np.dot(X.T,X)
+ inver=np.linalg.inv(xtx)
+ xty=np.dot(X.T,y)
+ w=np.dot(inver,xty)
+ return w
 
 ###### Q4.2 ######
 def regularized_linear_regression(X, y, lambd):
@@ -37,7 +41,12 @@ def regularized_linear_regression(X, y, lambd):
     """
   #####################################################
   #				 YOUR CODE HERE					                    #
-  #####################################################		 
+  #####################################################	
+  reg=lambd * np.identity(X.shape[1])
+  xtx=np.dot(X.T,X)
+  inver=np.linalg.inv(xtx+reg)
+  xty=np.dot(X.T,y)
+  w=np.dot(inver,xty)
   return w
 
 ###### Q4.3 ######
@@ -56,6 +65,14 @@ def tune_lambda(Xtrain, ytrain, Xval, yval, lambds):
   #####################################################
   #				 YOUR CODE HERE					                    #
   #####################################################		 
+  errs=[]
+  for lam in lambds:
+    w=regularized_linear_regression(Xtrain,ytrain,lam)
+    err=test_error(w,Xval,yval)
+    errs.append(err)
+  bestlambda=lambds[np.argmin(errs)]
+
+
   return bestlambda
 
 ###### Q4.4 ######
@@ -69,6 +86,9 @@ def test_error(w, X, y):
     Returns:
     - err: the mean square error
     """
+
+  pred = np.dot(X, w.T)
+  err = np.sum(np.square(y-pred))/X.shape[0]
   return err
 
 
