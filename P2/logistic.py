@@ -17,12 +17,10 @@ def binary_train(X, y, w0=None, b0=None, step_size=0.5, max_iterations=1000):
     training data
     - step_size: step size (learning rate)
 	- max_iterations: number of iterations to perform gradient descent
-
     Returns:
     - w: D-dimensional vector, a numpy array which is the weight 
     vector of logistic regression
     - b: scalar, which is the bias of logistic regression
-
     Find the optimal parameters w and b for inputs X and y.
     Use the *average* of the gradients for all training examples
 	multiplied by the step_size to update parameters.
@@ -39,11 +37,18 @@ def binary_train(X, y, w0=None, b0=None, step_size=0.5, max_iterations=1000):
     if b0 is not None:
         b = b0
 
-
-    """
-    TODO: add your code here
-    """
-
+    for i in range(max_iterations):
+        gradw = 0
+        gradb = 0
+        for n in range(N):
+            z = np.dot(X[n], w.T) + b
+            h = sigmoid(z)
+            gradw += np.dot(h - y[n],X[n])
+            gradb += h - y[n]
+        gradw = gradw / N
+        gradb = gradb / N
+        w -= step_size * gradw
+        b -= step_size * gradb
     assert w.shape == (D,)
     return w, b
 
@@ -58,12 +63,11 @@ def binary_predict(X, w, b):
     - preds: N dimensional vector of binary predictions: {0, 1}
     """
     N, D = X.shape
-    preds = np.zeros(N) 
+    preds = np.zeros(N)
 
 
-    """
-    TODO: add your code here
-    """      
+    preds = np.sign(np.dot(X, w.T) + b)
+    preds[preds==-1] = 0
     assert preds.shape == (N,) 
     return preds
 
@@ -83,12 +87,10 @@ def multinomial_train(X, y, C,
     - C: number of classes in the data
     - step_size: step size (learning rate)
     - max_iterations: number of iterations to perform gradient descent
-
     Returns:
     - w: C-by-D weight matrix of multinomial logistic regression, where 
     C is the number of classes and D is the dimensionality of features.
     - b: bias vector of length C, where C is the number of classes
-
     Implement multinomial logistic regression for multiclass 
     classification. Again use the *average* of the gradients for all training 
 	examples multiplied by the step_size to update parameters.
@@ -109,9 +111,25 @@ def multinomial_train(X, y, C,
         b = b0
 
 
-    """
-    TODO: add your code here
-    """
+
+    def softmax(x):
+        e = np.exp(x - np.max(x))
+        if e.ndim == 1:
+            return e / np.sum(e, axis=0)
+        else:  
+            return e / np.array([np.sum(e, axis=1)]).T
+
+    y_one_hot = np.zeros((N,C))
+    for i in range(N):
+        y_one_hot[i][y[i]] = 1
+
+    for i in range (max_iterations):
+        error = softmax(np.dot(X, w.T) + b) - y_one_hot
+        w -= step_size * np.dot(error.T, X) / N
+        b -= step_size * np.sum(error) / N
+
+
+
 
     assert w.shape == (C, D)
     assert b.shape == (C,)
@@ -130,19 +148,26 @@ def multinomial_predict(X, w, b):
     - preds: N dimensional vector of multiclass predictions.
     Outputted predictions should be from {0, C - 1}, where
     C is the number of classes
-
     Make predictions for multinomial classifier.
     """
     N, D = X.shape
     C = w.shape[0]
     preds = np.zeros(N) 
 
-    """
-    TODO: add your code here
-    """   
+
+    def softmax(x):
+        e = np.exp(x - np.max(x))
+        if e.ndim == 1:
+            return e / np.sum(e, axis=0)
+        else:  
+            return e / np.array([np.sum(e, axis=1)]).T
+
+    prob = softmax(np.dot(X,w.T) + b)
+    preds = np.argmax(prob, axis = 1)
 
     assert preds.shape == (N,)
     return preds
+
 
 
 def OVR_train(X, y, C, w0=None, b0=None, step_size=0.5, max_iterations=1000):
@@ -157,11 +182,9 @@ def OVR_train(X, y, C, w0=None, b0=None, step_size=0.5, max_iterations=1000):
     - b0: initial value of bias term
     - step_size: step size (learning rate)
     - max_iterations: number of iterations to perform gradient descent
-
     Returns:
     - w: a C-by-D weight matrix of OVR logistic regression
     - b: bias vector of length C
-
     Implement multiclass classification using one-versus-rest with binary logistic 
 	regression as the black-box. Recall that the one-versus-rest classifier is 
     trained by training C different classifiers. 
@@ -176,9 +199,13 @@ def OVR_train(X, y, C, w0=None, b0=None, step_size=0.5, max_iterations=1000):
     if b0 is not None:
         b = b0
 
-    """
-    TODO: add your code here
-    """
+
+
+    for k in range(C):
+        yk = np.where(y == k, 1, 0)
+        w[k], b[k] = binary_train(X, yk)
+    
+
     assert w.shape == (C, D), 'wrong shape of weights matrix'
     assert b.shape == (C,), 'wrong shape of bias terms vector'
     return w, b
@@ -196,7 +223,6 @@ def OVR_predict(X, w, b):
     - preds: vector of class label predictions.
     Outputted predictions should be from {0, C - 1}, where
     C is the number of classes.
-
     Make predictions using OVR strategy and probability predictions from binary
     classifiers. 
     """
@@ -204,9 +230,7 @@ def OVR_predict(X, w, b):
     C = w.shape[0]
     preds = np.zeros(N) 
     
-    """
-    TODO: add your code here
-    """
+    preds = np.argmax(np.dot(X,np.transpose(w)) + b,axis=1)
 
     assert preds.shape == (N,)
     return preds
@@ -265,7 +289,7 @@ def run_multiclass():
     for data, name, num_classes in datasets:
         print('%s: %d class classification' % (name, num_classes))
         X_train, X_test, y_train, y_test = data
-        
+
         print('One-versus-rest:')
         w, b = OVR_train(X_train, y_train, C=num_classes)
         train_preds = OVR_predict(X_train, w=w, b=b)
@@ -273,7 +297,7 @@ def run_multiclass():
         print('train acc: %f, test acc: %f' % 
             (accuracy_score(y_train, train_preds),
              accuracy_score(y_test, preds)))
-    
+        
         print('Multinomial:')
         w, b = multinomial_train(X_train, y_train, C=num_classes)
         train_preds = multinomial_predict(X_train, w=w, b=b)
@@ -301,4 +325,3 @@ if __name__ == '__main__':
 
     if not args.type or args.type == 'multiclass':
         run_multiclass()
-        
