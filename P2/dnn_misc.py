@@ -1,7 +1,6 @@
 """
 Do not change the input and output format.
 If our script cannot run your code or the format is improper, your code will not be graded.
-
 The only classes/functions you need to implement in this template is linear_layer, relu, and dropout
 """
 
@@ -19,15 +18,12 @@ class linear_layer:
 
     """
         The linear (affine/fully-connected) module.
-
         It is built up with two arguments:
         - input_D: the dimensionality of the input example/instance of the forward pass
         - output_D: the dimensionality of the output example/instance of the forward pass
-
         It has two learnable parameters:
         - self.params['W']: the W matrix (numpy array) of shape input_D-by-output_D
         - self.params['b']: the b vector (numpy array) of shape 1-by-output_D
-
         It will record the partial derivatives of loss w.r.t. self.params['W'] and self.params['b'] in:
         - self.gradient['W']: input_D-by-output_D numpy array
         - self.gradient['b']: 1-by-output_D numpy array
@@ -46,17 +42,14 @@ class linear_layer:
 
         """
             The forward pass of the linear (affine/fully-connected) module.
-
             Input:
             - X: A N-by-input_D numpy array, where each 'row' is an input example/instance (i.e., X[i], where i = 1,...,N).
                 The mini-batch size is N.
-
             Operation:
             - You are going to generate a N-by-output_D numpy array named forward_output.
             - For each row x of X (say X[i]), perform X[i] self.params['W'] + self.params['b'], and store the output in forward_output[i].
             - Please use np.XX to call a numpy function XX.
             - You are encouraged to use matrix/element-wise operations to avoid using FOR loop.
-
             Return:
             - forward_output: A N-by-output_D numpy array, where each 'row' is an output example/instance.
         """
@@ -64,6 +57,8 @@ class linear_layer:
         ################################################################################
         # TODO: Implement the linear forward pass. Store the result in forward_output  #
         ################################################################################
+        
+        forward_output = np.dot(X, self.params['W']) + self.params['b']
 
         return forward_output
 
@@ -71,12 +66,10 @@ class linear_layer:
 
         """
             The backward pass of the linear (affine/fully-connected) module.
-
             Input:
             - X: A N-by-input_D numpy array, the input to the forward pass.
             - grad: A N-by-output_D numpy array, where each 'row' (say row i) is the partial derivatives of the mini-batch loss
                  w.r.t. forward_output[i].
-
             Operation:
             - Compute the partial derivatives (gradients) of the mini-batch loss w.r.t. self.params['W'], self.params['b'], and X.
             - You are going to generate a N-by-input_D numpy array named backward_output.
@@ -84,7 +77,6 @@ class linear_layer:
             - Store the partial derivatives (gradients) of the mini-batch loss w.r.t. self.params['W'] in self.gradient['W'].
             - Store the partial derivatives (gradients) of the mini-batch loss w.r.t. self.params['b'] in self.gradient['b'].
             - You are encouraged to use matrix/element-wise operations to avoid using FOR loop.
-
             Return:
             - backward_output: A N-by-input_D numpy array, where each 'row' (say row i) is the partial derivatives of the mini-batch loss
                  w.r.t. X[i].
@@ -98,6 +90,12 @@ class linear_layer:
         # only return backward_output, but need to compute self.gradient['W'] and self.gradient['b']                             #
         ##########################################################################################################################
 
+        
+        self.gradient['W'] = np.dot(X.T, grad)
+        self.gradient['b'] = np.dot(np.ones((1, len(X))), grad)
+        backward_output = np.dot(grad,np.transpose(self.params['W']))
+
+
         return backward_output
 
 
@@ -105,7 +103,6 @@ class relu:
 
     """
         The relu (rectified linear unit) module.
-
         It is built up with NO arguments.
         It has no parameters to learn.
         self.mask is an attribute of relu. You can use it to store things (computed in the forward pass) for the use in the backward pass.
@@ -118,17 +115,14 @@ class relu:
 
         """
             The forward pass of the relu (rectified linear unit) module.
-
             Input:
             - X: A numpy array of arbitrary shape.
-
             Operation:
             - You are to generate a numpy array named forward_output of the same shape of X.
             - For each element x of X, perform max{0, x}, and store it in the corresponding element of forward_output.
             - Please use np.XX to call a numpy function XX if necessary.
             - You are encouraged to use matrix/element-wise operations to avoid using FOR loop.
             - You can use self.mask to store what you may need (except X) for the use in the backward pass.
-
             Return:
             - forward_output: A numpy array of the same shape of X
         """
@@ -137,25 +131,24 @@ class relu:
         # TODO: Implement the relu forward pass. Store the result in forward_output    #
         ################################################################################
 
+        forward_output = np.maximum(X, 0)
+
         return forward_output
 
     def backward(self, X, grad):
 
         """
             The backward pass of the relu (rectified linear unit) module.
-
             Input:
             - X: A numpy array of arbitrary shape, the input to the forward pass.
             - grad: A numpy array of the same shape of X, where each element is the partial derivative of the mini-batch loss
                  w.r.t. the corresponding element in forward_output.
-
             Operation:
             - You are to generate a numpy array named backward_output of the same shape of X.
             - Compute the partial derivatives (gradients) of the mini-batch loss w.r.t. X, and store it in backward_output.
             - You are encouraged to use matrix/element-wise operations to avoid using FOR loop.
             - You can use self.mask.
             - PLEASE follow the Heaviside step function defined in CSCI567_HW2.pdf
-
             Return:
             - backward_output: A numpy array of the same shape as X, where each element is the partial derivative of the mini-batch loss
                  w.r.t. the corresponding element in  X.
@@ -167,6 +160,9 @@ class relu:
         # PLEASE follow the Heaviside step function defined in CSCI567_HW2.pdf                                                   #
         ##########################################################################################################################
 
+        h = np.array(X>0)
+        backward_output = np.multiply(grad,h)
+        
         return backward_output
 
 
@@ -174,10 +170,8 @@ class dropout:
 
     """
         The dropout module.
-
         It is built up with one arguments:
         - r: the dropout rate
-
         It has no parameters to learn.
         self.mask is an attribute of dropout. You can use it to store things (computed in the forward pass) for the use in the backward pass.
     """
@@ -190,18 +184,15 @@ class dropout:
 
         """
             The forward pass of the dropout module.
-
             Input:
             - X: A numpy array of arbitrary shape.
             - is_train: A boolean value. If False, no dropout is performed.
-
             Operation:
             - Sample uniformly a value p in [0.0, 1.0) for each element of X
             - If p >= self.r, output that element multiplied by (1.0 / (1 - self.r)); otherwise, output 0 for that element
             - Please use np.XX to call a numpy function XX if necessary.
             - You are encouraged to use matrix/element-wise operations to avoid using FOR loop.
             - You can use self.mask to store what you may need (except X) for the use in the backward pass.
-
             Return:
             - forward_output: A numpy array of the same shape of X (the output of dropout)
         """
@@ -221,19 +212,16 @@ class dropout:
 
         """
             The backward pass of the dropout module.
-
             Input:
             - X: A numpy array of arbitrary shape, the input to the forward pass.
             - grad: A numpy array of the same shape of X, where each element is the partial derivative of the mini-batch loss
                  w.r.t. the corresponding element in forward_output.
-
             Operation:
             - You are to generate a numpy array named backward_output of the same shape of X.
             - Compute the partial derivatives (gradients) of the mini-batch loss w.r.t. X, and store it in backward_output.
             - You are encouraged to use matrix/element-wise operations to avoid using FOR loop.
             - You should use self.mask. You should NOT re-sample p.
             - Check CSCI567_HW2.pdf for the backward pass of dropout.
-
             Return:
             - backward_output: A numpy array of the same shape as X, where each element is the partial derivative of the mini-batch loss
                  w.r.t. the corresponding element in X.
@@ -244,6 +232,8 @@ class dropout:
         # backward_output = ? (A numpy array of the shape of X, the gradient of the mini-batch loss w.r.t. X)                    #
         # PLEASE follow the formula shown in the homework pdf                                                                    #
         ##########################################################################################################################
+
+        backward_output = np.multiply(self.mask, grad)
 
         return backward_output
 
