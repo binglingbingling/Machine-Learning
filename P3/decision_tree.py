@@ -32,7 +32,7 @@ class DecisionTree(Classifier):
 		print(name + '{')
 		
 		string = ''
-		for idx_cls in node.num_cls:
+		for idx_cls in range(node.num_cls):
 			string += str(node.labels.count(idx_cls)) + ' '
 		print(indent + ' num of sample / cls: ' + string)
 
@@ -89,22 +89,56 @@ class TreeNode(object):
 			# TODO: compute the conditional entropy
 			########################################################
 			
-		
+
+			branches = np.array(branches)
+			bran_sum = np.sum(branches, axis=0)
+			probability = branches / bran_sum
+			entropy = np.sum(np.array([[-i * np.log2(i) if i > 0 else 0 for i in x] for x in probability]), axis=0)
+			w = bran_sum / np.sum(bran_sum)
+			cond_entropy = np.sum(entropy * w)
+			return cond_entropy
+
+		features = np.array(self.features)
+		entropies = []
 		for idx_dim in range(len(self.features[0])):
 		############################################################
 		# TODO: compare each split using conditional entropy
 		#       find the best split
 		############################################################
 
+			branch = []
+			feature_col = features[:,idx_dim]
+			unique_feature = np.unique(feature_col)
+			
+			for f in unique_feature:
+				branch_f = []
+				feature_f = np.where(feature_col==f)
+				label_f = np.array(self.labels)[feature_f]
+				for i in range(self.num_cls):
+					branch_f.append(np.sum(label_f==i))
+
+				branch.append(branch_f)
+			entropies.append(conditional_entropy(np.array(branch).T.tolist()))
+		
+		self.dim_split = np.argmin(entropies)
 
 
 
 		############################################################
 		# TODO: split the node, add child nodes
 		############################################################
+		feature = features[:,self.dim_split]
+		self.feature_uniq_split = np.unique(feature).tolist()
+		if len(np.unique(feature)) > 1:
+			for m in np.unique(feature):
+				self.children.append(TreeNode(features[np.where(feature==m)].tolist(),np.array(self.labels)[np.where(feature==m)].tolist(), self.num_cls))
+		else:
+			self.splittable = False
+
+		
 
 
-
+    	
 
 		# split the child nodes
 		for child in self.children:
@@ -113,13 +147,25 @@ class TreeNode(object):
 
 		return
 
+
+	def predict(self, feature: List[int]) -> int:
+	    if self.splittable:
+	        idx_child = self.feature_uniq_split.index(feature[self.dim_split])
+	        feature = feature[:self.dim_split] + feature[self.dim_split+1:]
+	        return self.children[idx_child].predict(feature)
+	    else:
+	        return self.cls_max
+
+
+		
 	def predict(self, feature: List[int]) -> int:
 		if self.splittable:
-			# print(feature)
 			idx_child = self.feature_uniq_split.index(feature[self.dim_split])
 			return self.children[idx_child].predict(feature)
 		else:
 			return self.cls_max
+
+
 
 
 

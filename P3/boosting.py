@@ -34,6 +34,10 @@ class Boosting(Classifier):
 		########################################################
 		# TODO: implement "predict"
 		########################################################
+		h=[]
+		h = np.sum([np.array(self.clfs_picked[i].predict(features))*self.betas[i] for i in range(self.T)], axis=0)
+		h = np.sign(h)
+		return h.tolist()
 		
 
 class AdaBoost(Boosting):
@@ -54,6 +58,23 @@ class AdaBoost(Boosting):
 		############################################################
 		# TODO: implement "train"
 		############################################################
+		N = len(features)
+		w = np.ones(N)/N
+		for t in range(self.T):
+			e=100000000
+			for clf in self.clfs:
+				error = np.sum(w * np.not_equal(labels,clf.predict(features)))
+				if error < e:
+					h = clf
+					e = error
+					h_p = clf.predict(features)
+			beta = np.log((1 - e) / e) / 2
+			self.clfs_picked.append(h)
+			self.betas.append(beta)
+			for n in range(N):
+				w[n] = w[n] * (np.exp(-beta) if labels[n] == h_p[n] else np.exp(beta))
+			w = w / np.sum(w)
+
 		
 		
 	def predict(self, features: List[List[float]]) -> List[int]:
