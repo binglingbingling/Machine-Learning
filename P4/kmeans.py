@@ -17,7 +17,7 @@ class KMeans():
         self.e = e
 
     def fit(self, x):
-       '''
+        '''
             Finds n_cluster in the data x
             params:
                 x - N X D numpy array
@@ -37,8 +37,34 @@ class KMeans():
         # - return (means, membership, number_of_updates)
 
         # DONOT CHANGE CODE ABOVE THIS LINE
-        raise Exception(
-            'Implement fit function in KMeans class (filename: kmeans.py)')
+
+
+        
+        means_ind = np.random.choice(N, self.n_cluster, replace=True)
+        means = x[means_ind]
+        J = np.inf
+        x_mu = np.zeros((N, self.n_cluster))
+        membership = np.zeros((N))
+        
+        for i in range(1,self.max_iter+1):
+            r_ik = np.zeros((N, self.n_cluster))
+            number_of_updates = i
+            for j in range(self.n_cluster):
+                x_mu[:, j] = np.sum(np.square(means[j] - x), axis=1)
+            membership = np.argmin(x_mu, axis=1)
+            r_ik[np.arange(N), membership] = 1
+            Jnew = 0
+            for i in range(N):
+                x_mu_i = means[np.argmax(r_ik[i])] - x[i]
+                Jnew += np.dot(x_mu_i.T,x_mu_i)
+            Jnew = Jnew/N
+            if abs(J-Jnew) <= self.e:
+                break
+            J = Jnew
+            means = np.array([np.mean(x[membership==k], axis=0) for k in range(self.n_cluster)])
+        return means, membership, number_of_updates
+
+
         # DONOT CHANGE CODE BELOW THIS LINE
 
 class KMeansClassifier():
@@ -83,8 +109,14 @@ class KMeansClassifier():
         # - assign labels to centroid_labels
 
         # DONOT CHANGE CODE ABOVE THIS LINE
-        raise Exception(
-            'Implement fit function in KMeansClassifier class (filename: kmeans.py)')
+        kmeans = KMeans(self.n_cluster, self.max_iter, self.e)
+        centroids, membership, number_of_updates = kmeans.fit(x)     
+        centroid_labels = np.zeros((self.n_cluster))
+        for k in range(self.n_cluster):
+            votes = np.bincount(y[np.where(membership == k)])
+            centroid_labels[k] = np.argmax(votes)
+        self.centroids = centroids
+
 
         # DONOT CHANGE CODE BELOW THIS LINE
 
@@ -117,8 +149,9 @@ class KMeansClassifier():
         # - return labels
 
         # DONOT CHANGE CODE ABOVE THIS LINE
-        raise Exception(
-            'Implement predict function in KMeansClassifier class (filename: kmeans.py)')
+
+        dist_norm = np.linalg.norm(x - np.expand_dims(self.centroids, axis=1), axis=2)
+        labels = self.centroid_labels[np.argmin(dist_norm, axis=0)]
         # DONOT CHANGE CODE BELOW THIS LINE
         return labels
 

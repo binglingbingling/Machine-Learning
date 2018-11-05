@@ -31,9 +31,16 @@ def transform_image(image, code_vectors):
     # - implement the function
 
     # DONOT CHANGE CODE ABOVE THIS LINE
-    raise Exception(
-        'Implement transform_image function (filename:kmeansTest.py)')
-    # DONOT CHANGE CODE BELOW THIS LINE
+
+    X = image.shape[0]
+    Y = image.shape[1]
+    RGB =  image.shape[2]
+    reshaped_image = image.reshape(X * Y, RGB)
+    norm_dist = np.linalg.norm(reshaped_image - np.expand_dims(code_vectors, axis=1), axis=2)
+    y = np.argmin(norm_dist, axis=0)
+    new_im = code_vectors[y].reshape(X, Y, RGB)
+
+  # DONOT CHANGE CODE BELOW THIS LINE
     return new_im
 
 ################################################################################

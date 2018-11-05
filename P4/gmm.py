@@ -47,8 +47,19 @@ class GMM():
             # - compute variance and pi_k (see P4.pdf)
 
             # DONOT MODIFY CODE ABOVE THIS LINE
-            raise Exception(
-                'Implement initialization of variances, means, pi_k using k-means')
+            
+            kmeans = KMeans(self.n_cluster, self.max_iter, self.e)
+            self.means, membership, iter_num = kmeans.fit(x)
+            r_ik = np.zeros((N,self.n_cluster))
+            r_ik[np.arange(N), membership] = 1
+            N_k = np.sum(r_ik, axis=0)
+            self.pi_k = N_k / N
+            self.variances = np.zeros((self.n_cluster, D, D))
+            for k in range(self.n_cluster):
+                dist = (x - self.means[k])[membership == k] 
+                self.variances[k] = np.dot(np.transpose(dist), dist) / N_k[k]
+            
+            
             # DONOT MODIFY CODE BELOW THIS LINE
 
         elif (self.init == 'random'):
@@ -58,8 +69,9 @@ class GMM():
             # - initialize variance to be identity and pi_k to be uniform
 
             # DONOT MODIFY CODE ABOVE THIS LINE
-            raise Exception(
-                'Implement initialization of variances, means, pi_k randomly')
+            self.means = np.random.rand(self.n_cluster, D)
+            self.variances = np.full((self.n_cluster, D, D), np.identity(D))
+            self.pi_k = np.full(self.n_cluster, 1 / self.n_cluster)
             # DONOT MODIFY CODE BELOW THIS LINE
 
         else:
@@ -72,7 +84,37 @@ class GMM():
         # - Return the number of E/M-Steps executed (Int) 
         # Hint: Try to separate E & M step for clarity
         # DONOT MODIFY CODE ABOVE THIS LINE
-        raise Exception('Implement fit function (filename: gmm.py)')
+        
+    
+        
+        iter = 0
+        log_likelihood = []
+        r_ik  = np.zeros((N, self.n_cluster))
+        while iter < self.max_iter:
+            for k in range(self.n_cluster):
+                u_k = self.means[k]
+                if (np.linalg.matrix_rank(self.variances[k]) < D):
+                    variance_k = self.variances[k] + 0.001 * np.identity(D)
+                else:
+                    variance_k = self.variances[k] 
+
+                r_ik[:, k] = np.exp(-0.5 * np.sum(np.multiply(np.dot(x - u_k, np.linalg.inv(variance_k)), x - u_k), axis=1)) 
+                r_ik[:, k] = r_ik[:, k] / np.sqrt((2 * np.pi) ** D * np.linalg.det(variance_k))
+                r_ik[:, k] = self.pi_k[k] * r_ik[:, k] 
+            log_likelihood_k = np.sum(np.log(np.sum(r_ik, axis=1)))  
+            
+            r_ik  = (r_ik .T / np.sum(r_ik , axis=1)).T
+            N_k = np.sum(r_ik, axis=0)
+
+            for k in range(self.n_cluster):
+                self.means[k] = np.transpose(np.sum(r_ik[:, k] * np.transpose(x), axis=1)) / N_k[k]
+                self.variances[k] = np.dot(np.multiply(np.transpose(x - self.means[k]), r_ik[:, k]), x - self.means[k]) / N_k[k]
+            self.pi_k = N_k / N
+            if (np.abs(log_likelihood - log_likelihood_k) <= self.e):
+                break
+            log_likelihood = log_likelihood_k
+            iter+= 1
+        return iter
         # DONOT MODIFY CODE BELOW THIS LINE
 
 		
@@ -95,7 +137,13 @@ class GMM():
         # - return the samples
 
         # DONOT MODIFY CODE ABOVE THIS LINE
-        raise Exception('Implement sample function in gmm.py')
+        K,D = self.means.shape
+        samples = np.zeros((N,D))
+        k = np.random.choice(self.n_cluster, N, p=self.pi_k)
+        for i in range(k.shape[0]):
+            mean = self.means[k[i]]
+            var = self.variances[k[i]]
+            samples[i] = np.random.multivariate_normal(mean, var)
         # DONOT MODIFY CODE BELOW THIS LINE
         return samples        
 
@@ -119,7 +167,23 @@ class GMM():
         # - return the log-likelihood (Float)
         # Note: you can call this function in fit function (if required)
         # DONOT MODIFY CODE ABOVE THIS LINE
-        raise Exception('Implement compute_log_likelihood function in gmm.py')
+        N, D = x.shape
+        r_ik = np.zeros((N, self.n_cluster))
+        for k in range(self.n_cluster):
+            u_k = means[k]
+            if (np.linalg.matrix_rank(self.variances[k]) < D):
+                variance_k = self.variances[k] + 0.001 * np.identity(D)
+            else:
+                variance_k = self.variances[k] 
+
+            r_ik[:, k] = np.exp(-0.5 * np.sum(np.multiply(np.dot(x - u_k, np.linalg.inv(variance_k)), x - u_k), axis=1)) 
+            r_ik[:, k] = r_ik[:, k] / np.sqrt((2 * np.pi) ** D * np.linalg.det(variance_k))
+            r_ik[:, k] = self.pi_k[k] * r_ik[:, k] 
+
+        log_likelihood = float(np.sum(np.log(np.sum(r_ik, axis=1))))
+
+
+
         # DONOT MODIFY CODE BELOW THIS LINE
         return log_likelihood
 
@@ -142,7 +206,10 @@ class GMM():
             # - Set self.c equal to ((2pi)^D) * det(variance) (after ensuring the variance matrix is full rank)
             # Note you can call this class in compute_log_likelihood and fit
             # DONOT MODIFY CODE ABOVE THIS LINE
-            raise Exception('Impliment Guassian_pdf __init__')
+            if (np.linalg.matrix_rank(variance) != D):
+                variance = variance + 0.001 * np.identity(D)
+            self.inv = np.linalg.inv(variance)
+            self.c = np.pow(2*np.pi, D) * np.linalg.det(variance)
             # DONOT MODIFY CODE BELOW THIS LINE
 
         def getLikelihood(self,x):
@@ -160,6 +227,6 @@ class GMM():
             # - Calculate the likelihood of sample x generated by this Gaussian
             # Note: use the described implementation of a Gaussian to ensure compatibility with the solutions
             # DONOT MODIFY CODE ABOVE THIS LINE
-            raise Exception('Impliment Guassian_pdf getLikelihood')
+            p = np.exp(np.matmul(np.matmul(-0.5 * (x - self.mean), self.inv), np.transpose((x - self.mean)) / np.sqrt(self.c)))
             # DONOT MODIFY CODE BELOW THIS LINE
             return p
